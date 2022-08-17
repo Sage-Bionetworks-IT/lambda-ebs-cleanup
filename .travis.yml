@@ -1,5 +1,5 @@
 language: python
-python: 3.7
+python: 3.9
 cache: pip
 env:
   global:
@@ -41,5 +41,4 @@ jobs:
           pipenv run sam package --template-file .aws-sam/build/template.yaml \
             --s3-bucket $LAMBDA_BUCKET \
             --output-template-file .aws-sam/build/$REPO_NAME.yaml
-        - pipenv run sam publish --template .aws-sam/build/$REPO_NAME.yaml
         - pipenv run aws s3 cp .aws-sam/build/$REPO_NAME.yaml s3://$CFN_BUCKET/$REPO_NAME/$TRAVIS_BRANCH/
