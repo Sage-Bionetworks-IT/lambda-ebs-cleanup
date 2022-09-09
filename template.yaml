@@ -1,41 +1,64 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Hello World lambda
-
-Metadata:
-  AWS::ServerlessRepo::Application:
-    Name: "lambda-template"
-    Description: "A GH template for quickly starting a new AWS lambda project."
-    Author: "Sage-Bionetworks"
-    SpdxLicenseId: "Apache-2.0"
-    # paths are relative to .aws-sam/build directory
-    LicenseUrl: "LICENSE"
-    ReadmeUrl: "README.md"
-    Labels: ["serverless", "template", "github", "quick-start"]
-    HomePageUrl: "https://github.com/Sage-Bionetworks-IT/lambda-template"
-    SemanticVersion: "0.0.3"
-    SourceCodeUrl: "https://github.com/Sage-Bionetworks-IT/lambda-template/tree/0.0.3"
+  AWS Lambda to scan for and remove unattached EBS volumes
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 30
+    Timeout: 300
+
+Parameters:
+  Schedule:
+    Description: >
+      Schedule to execute the lambda, can be a rate or a cron schedule. Format at
+      https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+    Type: String
+    Default: cron(0 2 * * * *)  # Run at 2am every night
+    ConstraintDescription: "Use schedule format: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
+  MinimumAge:
+    Description: >
+      Volumes younger than the specified age will be ignored
+    Type: String
+    Default: "5m"
+    AllowedPattern: "\\d+[smd]"
+    ConstraintDescription: "Must be an integer suffixed with 's', 'm', or 'd' for seconds, minutes, or days respectively"
 
 Resources:
-  HelloWorldFunction:
+  EbsCleanupFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: .
-      Handler: hello_world/app.lambda_handler
-      Runtime: python3.7
+      Handler: ebs_cleanup/app.lambda_handler
+      Runtime: python3.9
       Role: !GetAtt FunctionRole.Arn
+      Environment:
+        Variables:
+          ebsMinimumAge: !Ref MinimumAge
       Events:
-        HelloWorld:
+        NightlyTrigger:
+          Type: Schedule # More info about Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#schedule
+          Properties:
+            Schedule: !Ref Schedule
+        ApiTrigger:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /hello
+            Path: /clean
             Method: get
+
+  FunctionPolicy:   # policy to allow scanning and deleting of volumes
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ManageVolumes
+            Effect: Allow
+            Resource: "*"
+            Action:
+              - ec2:DescribeInstance*
+              - ec2:DescribeVolume*
+              - ec2:DeleteVolume
 
   FunctionRole:   # execute lambda function with this role
     Type: AWS::IAM::Role
@@ -51,17 +74,18 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Ref FunctionPolicy
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunctionArn:
-    Description: "Hello World Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionRoleArn:
-    Description: "Implicit IAM Role created for Hello World function"
+  EbsCleanupApi:
+    Description: "API Gateway endpoint URL for Prod stage for EBS Cleanup function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/clean/"
+  EbsCleanupFunctionArn:
+    Description: "EBS Cleanup Lambda Function ARN"
+    Value: !GetAtt EbsCleanupFunction.Arn
+  EbsCleanupFunctionRoleArn:
+    Description: "Implicit IAM Role created for EBS Cleanup function"
     Value: !GetAtt FunctionRole.Arn
