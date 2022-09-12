@@ -14,7 +14,7 @@ Parameters:
       Schedule to execute the lambda, can be a rate or a cron schedule. Format at
       https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
     Type: String
-    Default: cron(0 2 * * * *)  # Run at 2am every night
+    Default: cron(0 2 * * ? *)  # Run at 2am every night
     ConstraintDescription: "Use schedule format: https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html"
   MinimumAge:
     Description: >
