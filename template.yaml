@@ -56,8 +56,7 @@ Resources:
             Effect: Allow
             Resource: "*"
             Action:
-              - ec2:DescribeInstance*
-              - ec2:DescribeVolume*
+              - ec2:Describe*
               - ec2:DeleteVolume
 
   FunctionRole:   # execute lambda function with this role
