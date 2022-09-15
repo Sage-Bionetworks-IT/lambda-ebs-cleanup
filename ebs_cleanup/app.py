@@ -58,10 +58,11 @@ def local_volume_filter(volumes, age_string):
             continue
 
         # Ignore any volumes marked with the appropirate tag ('lambda-ebs-cleanup:ignore' == 'True')
-        LOG.info(f"Tags: {v['Tags']}")
+        tags = v.get('Tags', [])
+        LOG.info(f"Tags: {tags}")
         skip_tag = False
-        if v['Tags']:  # skip the case where tags is None (not iterable)
-            for tag in v['Tags']:
+        if tags:  # skip the case where tags is None (not iterable)
+            for tag in tags:
                 if 'Key' in tag and tag['Key'] == IGNORE_TAG:
                     if 'Value' in tag and tag['Value'] in ['True', 'true']:
                         LOG.info(f"Skipping {v['VolumeId']} due to {IGNORE_TAG} tag")

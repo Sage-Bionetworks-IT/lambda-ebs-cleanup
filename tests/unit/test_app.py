@@ -15,7 +15,8 @@ def volume_factory(volume_id, create_time, attachments, tags):
     result['VolumeId'] = str(volume_id)  # coerce ints to strings
     result['CreateTime'] = create_time
     result['Attachments'] = attachments
-    result['Tags'] = tags
+    if tags is not None:
+        result['Tags'] = tags
     return result
 
 def test_local_filter():
@@ -29,7 +30,7 @@ def test_local_filter():
     now = datetime.datetime.now()
     yesterday = now - datetime.timedelta(days=1)
 
-    mv1 = volume_factory(1, yesterday, [], [])
+    mv1 = volume_factory(1, yesterday, [], None)
     mv2 = volume_factory(2, yesterday, ["mystery-volume",], [])
     mv3 = volume_factory(3, now, [], [])
     mv4 = volume_factory(4, yesterday, [], [{'Key': 'lambda-ebs-cleanup:ignore', 'Value': 'True'}])
@@ -70,7 +71,7 @@ def test_scan():
     yesterday = now - datetime.timedelta(days=1)
 
     mv1 = volume_factory(1, yesterday, [], [])
-    mv2 = volume_factory(2, yesterday, [], [])
+    mv2 = volume_factory(2, yesterday, [], None)
     mv3 = volume_factory(3, yesterday, [], [])
     mv4 = volume_factory(4, now, [], [])
 
