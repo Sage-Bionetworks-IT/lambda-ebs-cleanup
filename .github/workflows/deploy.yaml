@@ -1,0 +1,38 @@
+name: lambda-deploy
+
+on:
+  push:
+    branches: [ 'test*' ]
+    #tags: [ 'v?[0-9]+\.[0-9]+\.[0-9]+' ]
+  pull_request:
+    #branches: [ 'master' ]
+    branches: [ 'test*' ]
+
+concurrency:
+  group: ${{ github.workflow }}
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+      - uses: pre-commit/action@v3.0.0
+  sam-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+      - run: sam build --use-container
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::745159704268:role/sagebase-github-oidc-cfn-template-deploy
+          role-session-name: GitHubActions-${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ github.run_id }}
+          role-duration-seconds: 900
+      - run: sam validate --lint
