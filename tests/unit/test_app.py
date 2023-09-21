@@ -2,6 +2,7 @@ from ebs_cleanup import app
 
 import datetime
 import json
+import os
 import random
 
 import boto3
@@ -66,7 +67,7 @@ def test_parse_age():
     assert min_out == min_date
     assert sec_out == sec_date
 
-def test_scan():
+def test_scan(mocker):
     now = datetime.datetime.now()
     yesterday = now - datetime.timedelta(days=1)
 
@@ -82,6 +83,8 @@ def test_scan():
     expected = [mv1, mv2, mv3]
 
     min_age = '30m'
+
+    mocker.patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'test-region'})
     ec2 = boto3.client('ec2')
 
     with Stubber(ec2) as stub:
