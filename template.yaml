@@ -30,7 +30,7 @@ Resources:
     Properties:
       CodeUri: .
       Handler: ebs_cleanup/app.lambda_handler
-      Runtime: python3.9
+      Runtime: python3.12
       Role: !GetAtt FunctionRole.Arn
       Environment:
         Variables:
@@ -40,11 +40,6 @@ Resources:
           Type: Schedule # More info about Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#schedule
           Properties:
             Schedule: !Ref Schedule
-        ApiTrigger:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /clean
-            Method: get
 
   FunctionPolicy:   # policy to allow scanning and deleting of volumes
     Type: AWS::IAM::ManagedPolicy
@@ -79,9 +74,6 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  EbsCleanupApi:
-    Description: "API Gateway endpoint URL for Prod stage for EBS Cleanup function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/clean/"
   EbsCleanupFunctionArn:
     Description: "EBS Cleanup Lambda Function ARN"
     Value: !GetAtt EbsCleanupFunction.Arn
